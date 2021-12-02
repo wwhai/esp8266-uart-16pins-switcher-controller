@@ -48,7 +48,8 @@ void initGpio()
 //
 //
 char terminator = '#';
-const int bufferLength = 24;
+// CTRL011#
+const int bufferLength = 9;
 char serialBuffer[bufferLength];
 
 void flushBuffer()
@@ -63,26 +64,31 @@ void flushBuffer()
 }
 void showBanner()
 {
-  Serial.println();
-  Serial.println();
-  Serial.println("-----------------------------------------------");
-  Serial.println("|     Esp8266 uart switch controller <'v'>    |");
-  Serial.println("|     Version: 0.0.1 Author: wwhai            |");
-  Serial.println("-----------------------------------------------");
-  Serial.println();
-  Serial.println();
+  Serial1.println();
+  Serial1.println();
+  Serial1.println("-----------------------------------------------");
+  Serial1.println("|     Esp8266 uart switch controller <'v'>    |");
+  Serial1.println("|     Version: 0.0.1 Author: wwhai            |");
+  Serial1.println("-----------------------------------------------");
+  Serial1.println();
+  Serial1.println();
 }
+/**
+ * 同步状态
+ * */
 void syncState()
 {
   for (size_t i = 1; i < 3; i++)
   {
-    Serial1.print(digitalRead(switcher[i]));
+    delay(10);
+    Serial.print(digitalRead(switcher[i]));
   }
-  Serial1.print("#");
+  Serial.print("#");
+  Serial.flush();
 }
 void setup()
 {
-  Serial.begin(9600);
+  Serial.begin(115200);
   initGpio();
   flushBuffer();
 }
@@ -91,44 +97,51 @@ void loop()
 {
   if (Serial.available())
   {
-    delay(500);
+    delay(400);
     size_t len = Serial.readBytesUntil(terminator, serialBuffer, bufferLength);
     char header[5];
     sprintf(header, "%c%c%c%c", serialBuffer[0], serialBuffer[1], serialBuffer[2], serialBuffer[3]);
+    // 获取状态
+    if (strcmp(header, "....") == 0)
+    {
+      syncState();
+      flushBuffer();
+    }
+    // 控制指令
     if (strcmp(header, "CTRL") == 0)
     {
       char cmd = serialBuffer[4];
       if (cmd == 0x00)
       {
-        Serial.printf("OFF:");
-        // 要去了 '#'
+        Serial1.printf("OFF:");
+        //  要去了 '#'
         for (size_t i = HEADER_LEN - 1; i < len - 1; i++)
         {
           int index = (int)serialBuffer[i];
           if (index <= 2)
           {
-            Serial.printf("[%02x]", switcher[index]);
+            Serial1.printf("[%02x]", switcher[index]);
             digitalWrite(switcher[index], LOW);
           }
         }
       }
       if (cmd == 0x01)
       {
-        Serial.printf("ON:");
-        // 要去了 '#'
+        Serial1.printf("ON:");
+        //  要去了 '#'
         for (size_t i = HEADER_LEN - 1; i < len - 1; i++)
         {
           int index = (int)serialBuffer[i];
           if (index <= 2)
           {
-            Serial.printf("[%02x]", switcher[index]);
+            Serial1.printf("[%02x]", switcher[index]);
             digitalWrite(switcher[index], HIGH);
           }
         }
       }
+      Serial1.flush();
       syncState();
+      flushBuffer();
     }
   }
-
-  flushBuffer();
 }
