@@ -1,5 +1,8 @@
 # 双路继电器开关
-本项目是基于`ESP8266`的 2 路继电器开关固件，项目基于 PlatformIO 开发，使用了 Arduino 库。
+本项目是基于`ESP8266`的 16 路继电器开关固件，项目基于 PlatformIO 开发，使用了 Arduino 库。
+## 外观
+![image](res/m.jpg)
+
 ## 协议
 ![image](res/1.png)
 
